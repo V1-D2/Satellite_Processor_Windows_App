@@ -6,12 +6,19 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sys
 import pathlib
-
+'''
 from gui.function_windows import (
     PolarCircleWindow,
     SingleStripWindow,
     Enhance8xWindow,
     PolarEnhanced8xWindow
+)
+'''
+from gui.function_windows_server import (
+    ServerPolarCircleWindow as PolarCircleWindow,
+    ServerSingleStripWindow as SingleStripWindow,
+    ServerEnhance8xWindow as Enhance8xWindow,
+    ServerPolarEnhanced8xWindow as PolarEnhanced8xWindow
 )
 from utils.file_manager import FileManager
 
