@@ -281,3 +281,40 @@ class ServerCommunicator:
 
         logger.warning(f"Job {job_id} timed out after {timeout} seconds")
         return None
+
+    def cleanup_server_jobs(self) -> bool:
+        """Stop running server jobs when client disconnects"""
+        try:
+            if not self.compute_client:
+                return True
+
+            # Get running SLURM jobs for our user
+            stdin, stdout, stderr = self.compute_client.exec_command(
+                "squeue -u vdidur -n satproc_job -h -o '%i'"
+            )
+
+            job_ids = stdout.read().decode().strip().split('\n')
+
+            for job_id in job_ids:
+                if job_id.strip():
+                    logger.info(f"Canceling SLURM job: {job_id}")
+                    stdin, stdout, stderr = self.compute_client.exec_command(
+                        f"scancel {job_id}"
+                    )
+
+            logger.info("Server jobs cleaned up successfully")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to cleanup server jobs: {e}")
+            return False
+
+    def disconnect(self):
+        """Close SSH connections and cleanup server jobs"""
+        # Cleanup server jobs before disconnecting
+        self.cleanup_server_jobs()
+
+        if self.compute_client:
+            self.compute_client.close()
+        if self.gateway_client:
+            self.gateway_client.close()

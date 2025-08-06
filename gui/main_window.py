@@ -208,7 +208,7 @@ class MainWindow:
             self.root.wait_window(window.window)
         except Exception as e:
             messagebox.showerror("Error", f"Failed to open 8x Polar window:\n{str(e)}")
-
+    '''
     def on_exit(self):
         """Handle Exit button click"""
         # Confirm exit
@@ -221,3 +221,28 @@ class MainWindow:
             finally:
                 self.root.quit()
                 sys.exit(0)
+    '''
+    def on_exit(self):
+        """Handle Exit button click"""
+        # Confirm exit
+        if messagebox.askyesno("Exit", "Are you sure you want to exit?"):
+            try:
+                # Clean up temp files
+                self.file_manager.cleanup_temp()
+
+                # NEW: Cleanup server jobs
+                from core.server_communicator import ServerCommunicator
+                server_comm = ServerCommunicator(self.auth_manager)
+                if server_comm.connect():
+                    server_comm.cleanup_server_jobs()
+                    server_comm.disconnect()
+
+            except Exception as e:
+                print(f"Error during cleanup: {e}")
+            finally:
+                self.root.quit()
+                sys.exit(0)
+
+
+
+    

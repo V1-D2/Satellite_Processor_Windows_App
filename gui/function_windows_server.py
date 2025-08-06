@@ -53,6 +53,9 @@ class ServerBaseFunctionWindow:
     def on_close(self):
         """Handle window close"""
         if hasattr(self, 'server_comm'):
+            # Only cleanup if we have an active job
+            if hasattr(self, 'current_job_id') and self.current_job_id:
+                print(f"Cleaning up job: {self.current_job_id}")
             self.server_comm.disconnect()
         self.window.destroy()
 
@@ -106,7 +109,7 @@ class ServerBaseFunctionWindow:
 
             # Wait for completion
             final_status = self.server_comm.wait_for_job(
-                job_id, timeout=3600, progress_callback=progress_callback
+                job_id, timeout=36000, progress_callback=progress_callback
             )
 
             if not final_status:
@@ -127,7 +130,7 @@ class ServerBaseFunctionWindow:
                     self.show_success(f"Processing complete!\nResults saved to:\n{job_output_dir}")
 
                     # Optional: Clean up server files
-                    # self.server_comm.cleanup_job(job_id)
+                    self.server_comm.cleanup_job(job_id)
                 else:
                     self.show_error("Failed to download results")
             else:
@@ -775,7 +778,7 @@ class ServerPolarEnhanced8xWindow(ServerBaseFunctionWindow):
             self.window,
             text="⚠️ This is the most GPU-intensive function\nProcessing may take 10-30 minutes",
             font=("Arial", 10, "italic"),
-            fg="blue"
+            fg="red"
         )
         gpu_label.pack(pady=5)
 
