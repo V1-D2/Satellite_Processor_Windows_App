@@ -40,21 +40,13 @@ class ServerCommunicator:
             self.gateway_client = paramiko.SSHClient()
             self.gateway_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-            # Try key-based auth first, then password
-            try:
-                self.gateway_client.connect(
-                    self.gateway_host,
-                    username=self.gateway_user,
-                    key_filename=os.path.expanduser("~/.ssh/id_rsa")
-                )
-            except:
-                # Fallback to password (you'll need to handle this)
-                password = input(f"Enter password for {self.gateway_user}@{self.gateway_host}: ")
-                self.gateway_client.connect(
-                    self.gateway_host,
-                    username=self.gateway_user,
-                    password=password
-                )
+            # Use password authentication directly
+            password = "UIAuia12345!"  # Your gateway password
+            self.gateway_client.connect(
+                self.gateway_host,
+                username=self.gateway_user,
+                password=password
+            )
 
             # Create channel for compute node
             gateway_transport = self.gateway_client.get_transport()
@@ -69,7 +61,7 @@ class ServerCommunicator:
                 self.compute_host,
                 username="vdidur",
                 sock=channel,
-                key_filename=os.path.expanduser("~/.ssh/id_rsa")
+                password=password  # Use same password
             )
 
             logger.info("Successfully connected to server")
@@ -169,23 +161,38 @@ class ServerCommunicator:
             # Create local directory
             local_dir.mkdir(parents=True, exist_ok=True)
 
-            # Use scp through gateway
             remote_path = f"{self.server_base_path}/results/{job_id}"
+            password = "UIAuia12345!"
 
-            # Build scp command
-            scp_cmd = [
-                "scp", "-r",
-                "-oProxyJump=ash@vdidur.ssec.wisc.edu",
-                f"vdidur@orchid-submit:{remote_path}/*",
-                str(local_dir)
-            ]
+            # Create expect script for password automation
+            expect_script = f'''#!/usr/bin/expect -f
+    set timeout 60
+    spawn scp -r -oProxyJump=vdidur@ash.ssec.wisc.edu vdidur@orchid-submit:{remote_path}/* {local_dir}
+    expect {{
+        "*password*" {{ send "{password}\\r"; exp_continue }}
+        "*Password*" {{ send "{password}\\r"; exp_continue }}
+        eof
+    }}
+    '''
 
-            # Execute scp
-            result = subprocess.run(scp_cmd, capture_output=True, text=True)
+            # Write expect script to temp file
+            import tempfile
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.exp', delete=False) as f:
+                f.write(expect_script)
+                expect_file = f.name
 
-            if result.returncode != 0:
-                logger.error(f"SCP failed: {result.stderr}")
-                return False
+            try:
+                # Make executable and run
+                os.chmod(expect_file, 0o755)
+                result = subprocess.run([expect_file], capture_output=True, text=True)
+
+                if result.returncode != 0:
+                    logger.error(f"Download failed: {result.stderr}")
+                    return False
+
+            finally:
+                # Clean up temp file
+                os.unlink(expect_file)
 
             logger.info(f"Results downloaded to {local_dir}")
             return True

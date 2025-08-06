@@ -115,14 +115,40 @@ class EnhancedProcessor:
         # Normalize for visualization
         temp_norm = (temp_clipped - temp_min) / (temp_max - temp_min)
 
-        # Save color image
-        plt.figure(figsize=(12, 8))
-        plt.imshow(temp_norm, cmap='turbo', aspect='auto')
-        plt.colorbar(label='Normalized Temperature')
-        plt.title(f'Enhanced Temperature 8x - {sample_name}')
-        plt.axis('off')
+        # Save color image with exact pixel correspondence
         color_path = output_dir / f"{sample_name}_enhanced_8x_color.png"
-        plt.savefig(color_path, dpi=150, bbox_inches='tight')
+        h, w = temp_8x.shape
+        dpi = 100
+
+        # Create figure with exact pixel dimensions
+        fig = plt.figure(figsize=(w / dpi, h / dpi), dpi=dpi)
+        ax = plt.axes([0, 0, 1, 1])  # Fill entire figure
+        ax.axis('off')
+
+        # Apply percentile filter if requested
+        if percentile_filter:
+            p_low, p_high = 1, 99
+            temp_min, temp_max = np.nanpercentile(temp_8x, [p_low, p_high])
+        else:
+            temp_min, temp_max = np.nanmin(temp_8x), np.nanmax(temp_8x)
+
+        # Get turbo colormap and set NaN to black
+        import matplotlib.cm as cm
+        turbo = cm.get_cmap('turbo')
+        turbo.set_bad(color='black')
+
+        # Plot with exact pixel mapping
+        ax.imshow(
+            temp_8x,
+            cmap=turbo,
+            vmin=temp_min,
+            vmax=temp_max,
+            interpolation='nearest',  # No smoothing
+            aspect='auto'
+        )
+
+        # Save without any margins
+        plt.savefig(color_path, dpi=dpi, bbox_inches='tight', pad_inches=0)
         plt.close()
 
         # Save grayscale image

@@ -11,6 +11,7 @@ from pathlib import Path
 
 from utils.validators import DateValidator
 from core.server_communicator import ServerCommunicator
+from core.gportal_client import GPortalClient
 
 
 class ServerBaseFunctionWindow:
@@ -37,6 +38,9 @@ class ServerBaseFunctionWindow:
         # Initialize server communicator
         self.server_comm = ServerCommunicator(auth_manager)
         self.current_job_id = None
+
+        # ADD THIS LINE - Initialize gportal client for file searching
+        self.gportal_client = GPortalClient(auth_manager)
 
     def center_window(self, width=600, height=400):
         """Center the window on screen"""
@@ -98,7 +102,7 @@ class ServerBaseFunctionWindow:
                 elif status['status'] == 'completed':
                     self.window.after(0, self.show_progress, "Job completed!")
                 elif status['status'] == 'failed':
-                    self.window.after(0, self.show_error, "Job failed on server")
+                    self.window.after(0, lambda: self.status_label.config(text="Job failed on server", fg="red"))
 
             # Wait for completion
             final_status = self.server_comm.wait_for_job(
@@ -382,18 +386,56 @@ class ServerSingleStripWindow(ServerBaseFunctionWindow):
         self.files_listbox.bind('<<ListboxSelect>>', self.on_file_selected)
 
     def on_check_files(self):
-        """Check available files - this still needs to query the server"""
-        # For now, just show a message
-        # In a real implementation, this would query the server for available files
-        self.show_progress("Checking files on server...")
+        """Check available files for the date"""
+        # Get date
+        date_str = self.date_entry.get().strip()
 
-        # Simulate some files
-        self.available_files = [
-            {'name': f'GW1AM2_202505{i:02d}_01D_EQMA_L1SGRTBR.h5', 'index': i}
-            for i in range(1, 6)
-        ]
+        # Validate date
+        validator = DateValidator()
+        is_valid, error_msg, date_obj = validator.validate_date(date_str)
 
-        self.update_files_list(self.available_files)
+        if not is_valid:
+            self.show_error(error_msg)
+            return
+
+        # Disable controls
+        self.check_button.config(state="disabled")
+        self.date_entry.config(state="disabled")
+
+        # Check in thread
+        thread = threading.Thread(
+            target=self.check_files_thread,
+            args=(date_obj,)
+        )
+        thread.daemon = True
+        thread.start()
+
+    def check_files_thread(self, date_obj):
+        """Check files in thread"""
+        try:
+            # Update status
+            self.window.after(0, self.show_progress, "Checking available files...")
+
+            # Convert date
+            date_str = date_obj.strftime("%Y-%m-%d")
+
+            # Get all files for date using GPORTAL
+            all_files = self.gportal_client.list_files_for_date(date_str)
+
+            if not all_files:
+                self.window.after(0, self.show_error, "No files available for this date")
+                return
+
+            # Update listbox
+            self.window.after(0, self.update_files_list, all_files)
+
+        except Exception as e:
+            self.window.after(0, self.show_error, f"Failed to check files: {str(e)}")
+
+        finally:
+            # Re-enable controls
+            self.window.after(0, lambda: self.check_button.config(state="normal"))
+            self.window.after(0, lambda: self.date_entry.config(state="normal"))
 
     def update_files_list(self, files):
         """Update files listbox"""
@@ -624,24 +666,17 @@ class ServerEnhance8xWindow(ServerBaseFunctionWindow):
     def _check_files_thread(self, date_obj):
         """Check files on server (runs in thread)"""
         try:
-            self.window.after(0, self.show_progress, "Connecting to server...")
-
-            if not self.server_comm.connect():
-                self.window.after(0, self.show_error, "Failed to connect to server")
-                return
-
-            # Query server for available files
-            # This is a simplified version - in reality, you'd implement a server query
             self.window.after(0, self.show_progress, "Checking available files...")
 
-            # For demo purposes, simulate some files
-            date_str = date_obj.strftime("%Y%m%d")
-            self.available_files = [
-                {'name': f'GW1AM2_{date_str}_{i:02d}D_EQMA_L1SGRTBR.h5', 'index': i}
-                for i in range(5)
-            ]
+            # Convert date and use real GPORTAL search
+            date_str = date_obj.strftime("%Y-%m-%d")
+            all_files = self.gportal_client.list_files_for_date(date_str)
 
-            self.window.after(0, self.update_files_list, self.available_files)
+            if not all_files:
+                self.window.after(0, self.show_error, "No files available for this date")
+                return
+
+            self.window.after(0, self.update_files_list, all_files)
 
         except Exception as e:
             self.window.after(0, self.show_error, f"Failed to check files: {str(e)}")
