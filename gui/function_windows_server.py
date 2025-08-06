@@ -757,7 +757,7 @@ class ServerPolarEnhanced8xWindow(ServerBaseFunctionWindow):
 
     def __init__(self, parent, auth_manager, path_manager, file_manager):
         super().__init__(parent, auth_manager, path_manager, file_manager, "8x Enhanced Polar (Server)")
-        self.center_window(500, 400)
+        self.center_window(500, 500)
         self.create_widgets()
 
     def create_widgets(self):
@@ -775,7 +775,7 @@ class ServerPolarEnhanced8xWindow(ServerBaseFunctionWindow):
             self.window,
             text="⚠️ This is the most GPU-intensive function\nProcessing may take 10-30 minutes",
             font=("Arial", 10, "italic"),
-            fg="red"
+            fg="blue"
         )
         gpu_label.pack(pady=5)
 
