@@ -34,7 +34,7 @@ class MainWindow:
 
         # Configure root window
         self.root.title("SatProcessor - Main Menu")
-        self.root.geometry("600x500")
+        self.root.geometry("600x600")
         self.root.resizable(False, False)
 
         # Center window

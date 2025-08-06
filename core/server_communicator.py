@@ -156,46 +156,63 @@ class ServerCommunicator:
             return None
 
     def download_results(self, job_id: str, local_dir: pathlib.Path) -> bool:
-        """Download job results from server"""
+        """Download job results from server using existing SSH connection"""
         try:
             # Create local directory
             local_dir.mkdir(parents=True, exist_ok=True)
 
+            # Use existing SSH connection with SFTP
             remote_path = f"{self.server_base_path}/results/{job_id}"
-            password = "UIAuia12345!"
 
-            # Create expect script for password automation
-            expect_script = f'''#!/usr/bin/expect -f
-    set timeout 60
-    spawn scp -r -oProxyJump=vdidur@ash.ssec.wisc.edu vdidur@orchid-submit:{remote_path}/* {local_dir}
-    expect {{
-        "*password*" {{ send "{password}\\r"; exp_continue }}
-        "*Password*" {{ send "{password}\\r"; exp_continue }}
-        eof
-    }}
-    '''
+            # Check if remote directory exists
+            stdin, stdout, stderr = self.compute_client.exec_command(f"ls -la {remote_path}")
+            stderr_content = stderr.read().decode().strip()
+            if stderr_content and "No such file" in stderr_content:
+                logger.error(f"Remote results directory not found: {remote_path}")
+                return False
 
-            # Write expect script to temp file
-            import tempfile
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.exp', delete=False) as f:
-                f.write(expect_script)
-                expect_file = f.name
+            # Get list of files in remote directory recursively
+            stdin, stdout, stderr = self.compute_client.exec_command(f"find {remote_path} -type f")
+            remote_files = stdout.read().decode().strip().split('\n')
 
+            if not remote_files or remote_files == ['']:
+                logger.error("No files found in remote results directory")
+                return False
+
+            # Use SFTP to download files
+            sftp = self.compute_client.open_sftp()
+
+            downloaded_count = 0
             try:
-                # Make executable and run
-                os.chmod(expect_file, 0o755)
-                result = subprocess.run([expect_file], capture_output=True, text=True)
+                for remote_file in remote_files:
+                    remote_file = remote_file.strip()
+                    if remote_file:  # Skip empty lines
+                        try:
+                            # Get relative path for local file
+                            rel_path = remote_file.replace(f"{remote_path}/", "")
+                            local_file = local_dir / rel_path
 
-                if result.returncode != 0:
-                    logger.error(f"Download failed: {result.stderr}")
-                    return False
+                            # Create local subdirectories if needed
+                            local_file.parent.mkdir(parents=True, exist_ok=True)
+
+                            # Download file
+                            sftp.get(remote_file, str(local_file))
+                            logger.info(f"Downloaded: {rel_path}")
+                            downloaded_count += 1
+
+                        except Exception as e:
+                            logger.warning(f"Failed to download {remote_file}: {e}")
+                            continue
 
             finally:
-                # Clean up temp file
-                os.unlink(expect_file)
+                sftp.close()
 
-            logger.info(f"Results downloaded to {local_dir}")
-            return True
+            if downloaded_count > 0:
+                logger.info(f"Downloaded {downloaded_count} files to {local_dir}")
+                return True
+            else:
+                logger.error("No files were downloaded")
+                return False
 
         except Exception as e:
             logger.error(f"Failed to download results: {e}")

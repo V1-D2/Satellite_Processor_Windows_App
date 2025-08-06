@@ -528,7 +528,7 @@ class ServerEnhance8xWindow(ServerBaseFunctionWindow):
 
     def __init__(self, parent, auth_manager, path_manager, file_manager):
         super().__init__(parent, auth_manager, path_manager, file_manager, "8x Enhancement (Server)")
-        self.center_window(600, 500)
+        self.center_window(600, 600)
         self.available_files = []
         self.create_widgets()
 
