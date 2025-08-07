@@ -32,6 +32,14 @@ class MainWindow:
         self.path_manager = path_manager
         self.file_manager = FileManager()
 
+        # Set custom icon
+        try:
+            icon_path = pathlib.Path(__file__).parent.parent / "assets" / "satellite_icon.ico"
+            if icon_path.exists():
+                self.root.iconbitmap(str(icon_path))
+        except Exception as e:
+            print(f"Could not load icon: {e}")
+
         # Configure root window
         self.root.title("SatProcessor - Main Menu")
         self.root.geometry("600x600")

@@ -21,6 +21,13 @@ class PathSelector:
         self.window.geometry("500x280")
         self.window.resizable(False, False)
 
+        try:
+            icon_path = pathlib.Path(__file__).parent.parent / "assets" / "satellite_icon.ico"
+            if icon_path.exists():
+                self.window.iconbitmap(str(icon_path))
+        except Exception as e:
+            print(f"Could not load icon: {e}")
+
         # Center window
         self.window.update_idletasks()
         x = (self.window.winfo_screenwidth() // 2) - (500 // 2)

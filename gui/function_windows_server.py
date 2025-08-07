@@ -8,10 +8,12 @@ import datetime
 import threading
 import time
 from pathlib import Path
+import pathlib
 
 from utils.validators import DateValidator
 from core.server_communicator import ServerCommunicator
 from core.gportal_client import GPortalClient
+from utils.progress_manager import ProgressBarManager
 
 
 class ServerBaseFunctionWindow:
@@ -28,6 +30,13 @@ class ServerBaseFunctionWindow:
         self.window.title(f"SatProcessor - {title}")
         self.window.resizable(False, False)
 
+        try:
+            icon_path = pathlib.Path(__file__).parent.parent / "assets" / "satellite_icon.ico"
+            if icon_path.exists():
+                self.window.iconbitmap(str(icon_path))
+        except Exception as e:
+            print(f"Could not load icon: {e}")
+
         # Prevent parent interaction
         self.window.transient(parent)
         self.window.grab_set()
@@ -38,6 +47,9 @@ class ServerBaseFunctionWindow:
         # Initialize server communicator
         self.server_comm = ServerCommunicator(auth_manager)
         self.current_job_id = None
+
+        # Progress bar manager
+        self.progress_manager = None
 
         # ADD THIS LINE - Initialize gportal client for file searching
         self.gportal_client = GPortalClient(auth_manager)
@@ -80,32 +92,43 @@ class ServerBaseFunctionWindow:
     def submit_job_to_server(self, function: str, parameters: dict):
         """Submit job to server and monitor progress"""
         try:
+            # Set up progress manager with different durations for different functions
+            durations = {
+                'polar_circle': 15,  # 15 minutes
+                'single_strip': 2,  # 2 minutes
+                'enhance_8x': 18,  # 18 minutes
+                'polar_enhanced_8x': 240  # 25 minutes
+            }
+
+            duration = durations.get(function, 20)
+            self.progress_manager = ProgressBarManager(
+                self.progress_bar,
+                self.status_label,
+                duration_minutes=duration
+            )
+
+            # Start progress bar
+            self.progress_manager.start_progress("Processing on server")
+
             # Connect to server
-            self.show_progress("Connecting to server...")
             if not self.server_comm.connect():
+                self.progress_manager.stop_progress()
                 self.show_error("Failed to connect to server")
                 return
 
             # Submit job
-            self.show_progress("Submitting job to server...")
             job_id = self.server_comm.submit_job(function, parameters)
 
             if not job_id:
+                self.progress_manager.stop_progress()
                 self.show_error("Failed to submit job")
                 return
 
             self.current_job_id = job_id
-            self.show_progress(f"Job submitted: {job_id}")
 
             # Monitor job progress
             def progress_callback(status):
-                if status['status'] == 'running':
-                    self.window.after(0, self.show_progress,
-                                      f"Processing on server... (Job: {job_id})")
-                elif status['status'] == 'completed':
-                    self.window.after(0, self.show_progress, "Job completed!")
-                elif status['status'] == 'failed':
-                    self.window.after(0, lambda: self.status_label.config(text="Job failed on server", fg="red"))
+                pass  # We're using time-based progress, not real progress
 
             # Wait for completion
             final_status = self.server_comm.wait_for_job(
@@ -113,30 +136,34 @@ class ServerBaseFunctionWindow:
             )
 
             if not final_status:
+                self.progress_manager.stop_progress()
                 self.show_error("Job timed out")
                 return
 
             if final_status['status'] == 'completed':
-                # Download results
-                self.show_progress("Downloading results...")
+                # Complete progress bar
+                self.progress_manager.complete_progress("Downloading results...")
 
-                # Create output directory
+                # Download results
                 output_base = self.path_manager.get_output_path()
                 job_output_dir = output_base / job_id
 
                 success = self.server_comm.download_results(job_id, job_output_dir)
 
                 if success:
+                    self.progress_manager.complete_progress("Processing complete!")
                     self.show_success(f"Processing complete!\nResults saved to:\n{job_output_dir}")
-
-                    # Optional: Clean up server files
                     self.server_comm.cleanup_job(job_id)
                 else:
+                    self.progress_manager.stop_progress()
                     self.show_error("Failed to download results")
             else:
+                self.progress_manager.stop_progress()
                 self.show_error("Job failed on server")
 
         except Exception as e:
+            if self.progress_manager:
+                self.progress_manager.stop_progress()
             self.show_error(f"Server processing failed: {str(e)}")
         finally:
             # Re-enable controls
@@ -148,8 +175,15 @@ class ServerPolarCircleWindow(ServerBaseFunctionWindow):
 
     def __init__(self, parent, auth_manager, path_manager, file_manager):
         super().__init__(parent, auth_manager, path_manager, file_manager, "Polar Circle (Server)")
-        self.center_window(500, 350)
+        self.center_window(500, 500)
         self.create_widgets()
+
+        try:
+            icon_path = pathlib.Path(__file__).parent.parent / "assets" / "satellite_icon.ico"
+            if icon_path.exists():
+                self.window.iconbitmap(str(icon_path))
+        except Exception as e:
+            print(f"Could not load icon: {e}")
 
     def create_widgets(self):
         """Create polar circle widgets"""
@@ -240,6 +274,13 @@ class ServerPolarCircleWindow(ServerBaseFunctionWindow):
         )
         cancel_button.pack(side="left", padx=5)
 
+        # Progress bar (hidden initially)
+        self.progress_bar = ttk.Progressbar(
+            self.window,
+            mode='determinate',
+            maximum=100
+        )
+
         # Status label
         self.status_label = tk.Label(
             self.window,
@@ -297,6 +338,13 @@ class ServerSingleStripWindow(ServerBaseFunctionWindow):
         self.center_window(600, 500)
         self.available_files = []
         self.create_widgets()
+
+        try:
+            icon_path = pathlib.Path(__file__).parent.parent / "assets" / "satellite_icon.ico"
+            if icon_path.exists():
+                self.window.iconbitmap(str(icon_path))
+        except Exception as e:
+            print(f"Could not load icon: {e}")
 
     def create_widgets(self):
         """Create single strip widgets"""
@@ -376,10 +424,17 @@ class ServerSingleStripWindow(ServerBaseFunctionWindow):
         )
         cancel_button.pack(side="left", padx=5)
 
+        # Progress bar (hidden initially)
+        self.progress_bar = ttk.Progressbar(
+            self.window,
+            mode='determinate',
+            maximum=100
+        )
+
         # Status label
         self.status_label = tk.Label(
             self.window,
-            text="Enter date and check for available files",
+            text="Enter date and select options",
             font=("Arial", 9),
             fg="black"
         )
@@ -532,6 +587,13 @@ class ServerEnhance8xWindow(ServerBaseFunctionWindow):
         self.available_files = []
         self.create_widgets()
 
+        try:
+            icon_path = pathlib.Path(__file__).parent.parent / "assets" / "satellite_icon.ico"
+            if icon_path.exists():
+                self.window.iconbitmap(str(icon_path))
+        except Exception as e:
+            print(f"Could not load icon: {e}")
+
     def create_widgets(self):
         """Create 8x enhancement widgets"""
         # Title
@@ -630,10 +692,17 @@ class ServerEnhance8xWindow(ServerBaseFunctionWindow):
         )
         cancel_button.pack(side="left", padx=5)
 
+        # Progress bar (hidden initially)
+        self.progress_bar = ttk.Progressbar(
+            self.window,
+            mode='determinate',
+            maximum=100
+        )
+
         # Status label
         self.status_label = tk.Label(
             self.window,
-            text="Enter date and check for available files",
+            text="Enter date and select options",
             font=("Arial", 9),
             fg="black"
         )
@@ -763,6 +832,13 @@ class ServerPolarEnhanced8xWindow(ServerBaseFunctionWindow):
         self.center_window(500, 500)
         self.create_widgets()
 
+        try:
+            icon_path = pathlib.Path(__file__).parent.parent / "assets" / "satellite_icon.ico"
+            if icon_path.exists():
+                self.window.iconbitmap(str(icon_path))
+        except Exception as e:
+            print(f"Could not load icon: {e}")
+
     def create_widgets(self):
         """Create 8x enhanced polar widgets"""
         # Title
@@ -872,10 +948,17 @@ class ServerPolarEnhanced8xWindow(ServerBaseFunctionWindow):
         )
         cancel_button.pack(side="left", padx=5)
 
+        # Progress bar (hidden initially)
+        self.progress_bar = ttk.Progressbar(
+            self.window,
+            mode='determinate',
+            maximum=100
+        )
+
         # Status label
         self.status_label = tk.Label(
             self.window,
-            text="Enter parameters and click Process",
+            text="Enter date and select options",
             font=("Arial", 9),
             fg="black"
         )
