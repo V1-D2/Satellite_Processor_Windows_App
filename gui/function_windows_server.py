@@ -29,14 +29,14 @@ class ServerBaseFunctionWindow:
         self.window = tk.Toplevel(parent)
         self.window.title(f"SatProcessor - {title}")
         self.window.resizable(False, False)
-
+        '''
         try:
             icon_path = pathlib.Path(__file__).parent.parent / "assets" / "satellite_icon.ico"
             if icon_path.exists():
                 self.window.iconbitmap(str(icon_path))
         except Exception as e:
             print(f"Could not load icon: {e}")
-
+        '''
         # Prevent parent interaction
         self.window.transient(parent)
         self.window.grab_set()
@@ -96,7 +96,7 @@ class ServerBaseFunctionWindow:
             durations = {
                 'polar_circle': 15,  # 15 minutes
                 'single_strip': 2,  # 2 minutes
-                'enhance_8x': 18,  # 18 minutes
+                'enhance_8x': 33,  # 18 minutes
                 'polar_enhanced_8x': 240  # 25 minutes
             }
 
@@ -175,16 +175,16 @@ class ServerPolarCircleWindow(ServerBaseFunctionWindow):
 
     def __init__(self, parent, auth_manager, path_manager, file_manager):
         super().__init__(parent, auth_manager, path_manager, file_manager, "Polar Circle (Server)")
-        self.center_window(500, 500)
+        self.center_window(500, 600)
         self.create_widgets()
-
+        '''
         try:
             icon_path = pathlib.Path(__file__).parent.parent / "assets" / "satellite_icon.ico"
             if icon_path.exists():
                 self.window.iconbitmap(str(icon_path))
         except Exception as e:
             print(f"Could not load icon: {e}")
-
+        '''
     def create_widgets(self):
         """Create polar circle widgets"""
         # Title
@@ -338,14 +338,14 @@ class ServerSingleStripWindow(ServerBaseFunctionWindow):
         self.center_window(600, 500)
         self.available_files = []
         self.create_widgets()
-
+        '''
         try:
             icon_path = pathlib.Path(__file__).parent.parent / "assets" / "satellite_icon.ico"
             if icon_path.exists():
                 self.window.iconbitmap(str(icon_path))
         except Exception as e:
             print(f"Could not load icon: {e}")
-
+        '''
     def create_widgets(self):
         """Create single strip widgets"""
         # Title
@@ -583,16 +583,15 @@ class ServerEnhance8xWindow(ServerBaseFunctionWindow):
 
     def __init__(self, parent, auth_manager, path_manager, file_manager):
         super().__init__(parent, auth_manager, path_manager, file_manager, "8x Enhancement (Server)")
-        self.center_window(600, 600)
+        self.center_window(600, 700)
         self.available_files = []
         self.create_widgets()
 
-        try:
-            icon_path = pathlib.Path(__file__).parent.parent / "assets" / "satellite_icon.ico"
-            if icon_path.exists():
-                self.window.iconbitmap(str(icon_path))
-        except Exception as e:
-            print(f"Could not load icon: {e}")
+        '''
+        icon_path = pathlib.Path(__file__).parent.parent / "assets" / "satellite_icon.ico"
+        if icon_path.exists():
+            self.window.iconbitmap(str(icon_path))
+        '''
 
     def create_widgets(self):
         """Create 8x enhancement widgets"""
@@ -829,15 +828,16 @@ class ServerPolarEnhanced8xWindow(ServerBaseFunctionWindow):
 
     def __init__(self, parent, auth_manager, path_manager, file_manager):
         super().__init__(parent, auth_manager, path_manager, file_manager, "8x Enhanced Polar (Server)")
-        self.center_window(500, 500)
+        self.center_window(500, 600)
         self.create_widgets()
-
+        '''
         try:
             icon_path = pathlib.Path(__file__).parent.parent / "assets" / "satellite_icon.ico"
             if icon_path.exists():
                 self.window.iconbitmap(str(icon_path))
         except Exception as e:
             print(f"Could not load icon: {e}")
+        '''
 
     def create_widgets(self):
         """Create 8x enhanced polar widgets"""
