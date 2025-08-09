@@ -1,1 +1,1 @@
-\\beans\users$\tomg\Data\Desktop\SatData
+/Users/student/Desktop/SatData

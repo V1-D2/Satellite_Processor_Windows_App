@@ -97,7 +97,7 @@ class ServerBaseFunctionWindow:
                 'polar_circle': 15,  # 15 minutes
                 'single_strip': 2,  # 2 minutes
                 'enhance_8x': 33,  # 18 minutes
-                'polar_enhanced_8x': 240  # 25 minutes
+                'polar_enhanced_8x': 140  # 25 minutes
             }
 
             duration = durations.get(function, 20)
@@ -175,7 +175,7 @@ class ServerPolarCircleWindow(ServerBaseFunctionWindow):
 
     def __init__(self, parent, auth_manager, path_manager, file_manager):
         super().__init__(parent, auth_manager, path_manager, file_manager, "Polar Circle (Server)")
-        self.center_window(500, 600)
+        self.center_window(500, 400)
         self.create_widgets()
         '''
         try:
