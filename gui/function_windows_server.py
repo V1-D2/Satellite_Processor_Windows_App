@@ -83,6 +83,7 @@ class ServerBaseFunctionWindow:
             self.status_label.config(text=f"Error: {message}", fg="red")
         messagebox.showerror("Error", message)
 
+
     def show_success(self, message):
         """Show success message"""
         if hasattr(self, 'status_label'):
