@@ -34,7 +34,10 @@ class MainWindow:
 
         # Set custom icon
         try:
-            icon_path = pathlib.Path(__file__).parent.parent / "assets" / "satellite_icon.ico"
+            if getattr(sys, 'frozen', False):
+                icon_path = pathlib.Path(sys._MEIPASS) / "assets" / "satellite_icon.ico"
+            else:
+                icon_path = pathlib.Path(__file__).parent.parent / "assets" / "satellite_icon.ico"
             if icon_path.exists():
                 self.root.iconbitmap(str(icon_path))
         except Exception as e:

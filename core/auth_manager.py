@@ -4,13 +4,18 @@ Authentication manager for gportal credentials
 
 import pathlib
 import os
+import sys
 
 
 class AuthManager:
     """Manages gportal authentication credentials"""
 
     def __init__(self):
-        self.config_dir = pathlib.Path(__file__).parent.parent / "config"
+        if getattr(sys, 'frozen', False):
+            # When frozen, use user's home directory for config
+            self.config_dir = pathlib.Path.home() / ".satelliteprocessor" / "config"
+        else:
+            self.config_dir = pathlib.Path(__file__).parent.parent / "config"
         self.credentials_file = self.config_dir / "credentials.txt"
         self.config_dir.mkdir(exist_ok=True)
 

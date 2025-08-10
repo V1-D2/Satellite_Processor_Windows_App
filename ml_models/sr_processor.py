@@ -13,6 +13,7 @@ import logging
 from tqdm import tqdm
 import gc
 import pyproj
+import sys
 
 from .temperature_sr_model import TemperatureSRModel
 from .data_preprocessing import TemperatureDataPreprocessor

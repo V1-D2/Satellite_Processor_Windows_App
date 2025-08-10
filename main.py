@@ -9,10 +9,25 @@ import sys
 import pathlib
 import tkinter as tk
 from tkinter import messagebox
+import sys
+
+
+# Add this function after imports
+def get_resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller"""
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
 
 # Add project root to path
-PROJECT_ROOT = pathlib.Path(__file__).parent
-sys.path.insert(0, str(PROJECT_ROOT))
+if getattr(sys, 'frozen', False):
+    PROJECT_ROOT = pathlib.Path(sys._MEIPASS)
+else:
+    PROJECT_ROOT = pathlib.Path(__file__).parent
 
 # Import our modules
 from gui.login_window import LoginWindow

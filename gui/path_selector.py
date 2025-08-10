@@ -5,6 +5,7 @@ Path selection window for output directory
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import pathlib
+import sys
 
 
 class PathSelector:
@@ -22,7 +23,10 @@ class PathSelector:
         self.window.resizable(False, False)
 
         try:
-            icon_path = pathlib.Path(__file__).parent.parent / "assets" / "satellite_icon.ico"
+            if getattr(sys, 'frozen', False):
+                icon_path = pathlib.Path(sys._MEIPASS) / "assets" / "satellite_icon.ico"
+            else:
+                icon_path = pathlib.Path(__file__).parent.parent / "assets" / "satellite_icon.ico"
             if icon_path.exists():
                 self.window.iconbitmap(str(icon_path))
         except Exception as e:

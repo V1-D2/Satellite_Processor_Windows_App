@@ -4,13 +4,19 @@ Output path manager
 
 import pathlib
 import os
+import sys
 
 
 class PathManager:
     """Manages output directory paths"""
 
     def __init__(self):
-        self.config_dir = pathlib.Path(__file__).parent.parent / "config"
+        if getattr(sys, 'frozen', False):
+            # When frozen, use user's home directory for config
+            self.config_dir = pathlib.Path.home() / ".satelliteprocessor" / "config"
+        else:
+            self.config_dir = pathlib.Path(__file__).parent.parent / "config"
+
         self.path_file = self.config_dir / "output_path.txt"
         self.config_dir.mkdir(exist_ok=True)
 

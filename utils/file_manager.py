@@ -6,6 +6,7 @@ import os
 import shutil
 import pathlib
 from typing import List
+import sys
 
 
 class FileManager:
@@ -13,8 +14,13 @@ class FileManager:
 
     def __init__(self):
         # Get temp directory relative to project root
-        self.project_root = pathlib.Path(__file__).parent.parent
-        self.temp_dir = self.project_root / "temp"
+        if getattr(sys, 'frozen', False):
+            # When frozen, use system temp directory
+            import tempfile
+            self.temp_dir = pathlib.Path(tempfile.gettempdir()) / "satelliteprocessor_temp"
+        else:
+            self.project_root = pathlib.Path(__file__).parent.parent
+            self.temp_dir = self.project_root / "temp"
 
     def get_temp_dir(self) -> pathlib.Path:
         """Get temporary directory path, creating if needed"""
