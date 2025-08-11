@@ -8,6 +8,7 @@ block_cipher = None
 datas = [
     ('assets/satellite_icon.ico', 'assets'),
     ('ml_models/checkpoints/net_g_45738.pth', 'ml_models/checkpoints'),
+    ('config', 'config'),
 ]
 
 # Hidden imports that PyInstaller might miss
@@ -68,7 +69,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,  # Set to True if you want console window for debugging
+    console=False,  # Set to True if you want console window for debugging
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
