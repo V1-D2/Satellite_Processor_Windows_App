@@ -24,7 +24,7 @@ class FileManager:
 
     def get_temp_dir(self) -> pathlib.Path:
         """Get temporary directory path, creating if needed"""
-        self.temp_dir.mkdir(exist_ok=True)
+        self.temp_dir.mkdir(parents=True, exist_ok=True)
         return self.temp_dir
 
     def cleanup_temp(self) -> bool:

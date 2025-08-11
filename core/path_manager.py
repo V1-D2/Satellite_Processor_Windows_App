@@ -18,7 +18,7 @@ class PathManager:
             self.config_dir = pathlib.Path(__file__).parent.parent / "config"
 
         self.path_file = self.config_dir / "output_path.txt"
-        self.config_dir.mkdir(exist_ok=True)
+        self.config_dir.mkdir(parents=True, exist_ok=True)
 
     def has_output_path(self):
         """Check if output path is configured"""

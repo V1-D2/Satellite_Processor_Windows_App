@@ -16,8 +16,17 @@ class AuthManager:
             self.config_dir = pathlib.Path.home() / ".satelliteprocessor" / "config"
         else:
             self.config_dir = pathlib.Path(__file__).parent.parent / "config"
+
+        try:
+            self.config_dir.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            print(f"Failed to create config directory: {e}")
+            # Use temp directory as fallback
+            import tempfile
+            self.config_dir = pathlib.Path(tempfile.gettempdir()) / "satelliteprocessor" / "config"
+            self.config_dir.mkdir(parents=True, exist_ok=True)
+
         self.credentials_file = self.config_dir / "credentials.txt"
-        self.config_dir.mkdir(exist_ok=True)
 
     def has_credentials(self):
         """Check if credentials file exists and is not empty"""
